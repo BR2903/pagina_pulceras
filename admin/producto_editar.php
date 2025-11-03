@@ -12,7 +12,8 @@ $producto = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if (!$producto) {
-    die("Producto no encontrado.");
+    // (Texto traducido)
+    die("Product not found.");
 }
 
 $categorias = $conn->query("SELECT id, nombre FROM categorias ORDER BY nombre ASC")->fetch_all(MYSQLI_ASSOC);
@@ -20,39 +21,59 @@ $materiales = $conn->query("SELECT id, nombre FROM materiales ORDER BY nombre AS
 
 $error = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    
     $nombre = trim($_POST['nombre']);
-    $descripcion = trim($_POST['descripcion']);
     $precio = floatval($_POST['precio']);
+    
+    if ($nombre === "" || $precio <= 0) {
+        // (Texto traducido)
+        $error = "Name and Price (greater than 0) are required.";
+    }
+
+    $descripcion = trim($_POST['descripcion']);
     $stock = intval($_POST['stock']);
-    $categoria_id = intval($_POST['categoria_id']);
-    $material_id = intval($_POST['material_id']);
+
+    $categoria_id = !empty($_POST['categoria_id']) ? intval($_POST['categoria_id']) : NULL;
+    $material_id = !empty($_POST['material_id']) ? intval($_POST['material_id']) : NULL;
 
     $imagen_nombre = $producto['imagen'];
     if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === UPLOAD_ERR_OK) {
+        
         $dir_subida = '../img/';
-        $archivo_tmp = $_FILES['imagen']['tmp_name'];
         $nombre_original = basename($_FILES['imagen']['name']);
-        $imagen_nombre_nueva = uniqid() . '_' . $nombre_original;
-        $ruta_destino = $dir_subida . $imagen_nombre_nueva;
+        $extension = strtolower(pathinfo($nombre_original, PATHINFO_EXTENSION));
+        $extensiones_permitidas = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
-        if (move_uploaded_file($archivo_tmp, $ruta_destino)) {
-            if (!empty($producto['imagen']) && file_exists($dir_subida . $producto['imagen'])) {
-                unlink($dir_subida . $producto['imagen']);
-            }
-            $imagen_nombre = $imagen_nombre_nueva;
+        if (!in_array($extension, $extensiones_permitidas)) {
+            // (Texto traducido)
+            $error = "Error: Only image files (jpg, jpeg, png, webp, gif) are allowed.";
         } else {
-            $error = "Error al subir la nueva imagen.";
+            $archivo_tmp = $_FILES['imagen']['tmp_name'];
+            $imagen_nombre_nueva = uniqid() . '_' . $nombre_original;
+            $ruta_destino = $dir_subida . $imagen_nombre_nueva;
+
+            if (move_uploaded_file($archivo_tmp, $ruta_destino)) {
+                if (!empty($producto['imagen']) && file_exists($dir_subida . $producto['imagen'])) {
+                    unlink($dir_subida . $producto['imagen']);
+                }
+                $imagen_nombre = $imagen_nombre_nueva;
+            } else {
+                // (Texto traducido)
+                $error = "Error uploading new image.";
+            }
         }
     }
 
     if ($error === "") {
         $stmt = $conn->prepare("UPDATE productos SET nombre=?, descripcion=?, precio=?, stock=?, categoria_id=?, material_id=?, imagen=? WHERE id=?");
         $stmt->bind_param("ssdiissi", $nombre, $descripcion, $precio, $stock, $categoria_id, $material_id, $imagen_nombre, $id);
+        
         if($stmt->execute()) {
             header('Location: productos_list.php');
             exit;
         } else {
-            $error = "Error al actualizar.";
+            // (Texto traducido)
+            $error = "Error updating: " . $stmt->error;
         }
         $stmt->close();
     }
@@ -60,39 +81,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $conn->close();
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Editar Producto</title>
+    <title>Edit Product</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
 <div class="container mt-4">
-    <h2>Editar producto</h2>
+    <h2>Edit Product</h2>
     <?php if ($error): ?>
-        <div class="alert alert-danger"><?= $error ?></div>
+        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
     <?php endif ?>
     <form method="post" enctype="multipart/form-data">
         <div class="mb-3">
-            <label for="nombre" class="form-label">Nombre</label>
+            <label for="nombre" class="form-label">Name <span class="text-danger">*</span></label>
             <input type="text" name="nombre" class="form-control" value="<?= htmlspecialchars($producto['nombre']) ?>" required autofocus>
         </div>
         <div class="mb-3">
-            <label for="descripcion" class="form-label">Descripción</label>
-            <textarea name="descripcion" class="form-control" rows="3" required><?= htmlspecialchars($producto['descripcion']) ?></textarea>
+            <label for="descripcion" class="form-label">Description</label>
+            <textarea name="descripcion" class="form-control" rows="3"><?= htmlspecialchars($producto['descripcion']) ?></textarea>
         </div>
         <div class="mb-3">
-            <label for="precio" class="form-label">Precio</label>
-            <input type="number" name="precio" class="form-control" step="0.01" value="<?= htmlspecialchars($producto['precio']) ?>" required>
+            <label for="precio" class="form-label">Price <span class="text-danger">*</span></label>
+            <input type="number" name="precio" class="form-control" step="0.01" min="0.01" value="<?= htmlspecialchars($producto['precio']) ?>" required>
         </div>
         <div class="mb-3">
             <label for="stock" class="form-label">Stock</label>
-            <input type="number" name="stock" class="form-control" min="0" value="<?= htmlspecialchars($producto['stock']) ?>" required>
+            <input type="number" name="stock" class="form-control" min="0" value="<?= htmlspecialchars($producto['stock']) ?>">
         </div>
         <div class="mb-3">
-            <label for="categoria_id" class="form-label">Categoría</label>
-            <select name="categoria_id" class="form-control" required>
-                <option value="">Seleccione...</option>
+            <label for="categoria_id" class="form-label">Category</label>
+            
+            <select name="categoria_id" class="form-control">
+                <option value="">(No category)</option>
                 <?php foreach ($categorias as $cat): ?>
                     <option value="<?= $cat['id'] ?>" <?= $cat['id'] == $producto['categoria_id'] ? 'selected' : '' ?>>
                         <?= htmlspecialchars($cat['nombre']) ?>
@@ -102,8 +124,9 @@ $conn->close();
         </div>
         <div class="mb-3">
             <label for="material_id" class="form-label">Material</label>
-            <select name="material_id" class="form-control" required>
-                <option value="">Seleccione...</option>
+
+            <select name="material_id" class="form-control">
+                <option value="">(No material)</option>
                 <?php foreach ($materiales as $mat): ?>
                     <option value="<?= $mat['id'] ?>" <?= $mat['id'] == $producto['material_id'] ? 'selected' : '' ?>>
                         <?= htmlspecialchars($mat['nombre']) ?>
@@ -112,17 +135,19 @@ $conn->close();
             </select>
         </div>
         <div class="mb-3">
-            <label for="imagen" class="form-label">Imagen (JPG, PNG, GIF, WEBP)</label>
+            <label for="imagen" class="form-label">Image</label>
             <?php if ($producto['imagen']): ?>
                 <div>
-                    <img src="../img/<?= htmlspecialchars($producto['imagen']) ?>" width="100" style="object-fit:cover;max-height:100px;">
-                    <br><small>Deja vacío para no cambiar la imagen</small>
+                    <img src="../img/<?= htmlspecialchars($producto['imagen']) ?>" width="100" style="object-fit:cover;max-height:100px; border: 1px solid #ddd; padding: 5px; border-radius: 5px;">
+                    <br><small>Upload a new image to replace it (optional)</small>
                 </div>
+            <?php else: ?>
+                 <small>No image. Upload one (optional).</small>
             <?php endif ?>
-            <input type="file" name="imagen" class="form-control" id="imagen" accept="image/*">
+            <input type="file" name="imagen" class="form-control mt-2" id="imagen" accept="image/*">
         </div>
-        <button type="submit" class="btn btn-primary">Actualizar</button>
-        <a href="productos_list.php" class="btn btn-secondary">Volver</a>
+        <button type="submit" class="btn btn-primary">Update</button>
+        <a href="productos_list.php" class="btn btn-secondary">Back</a>
     </form>
 </div>
 </body>

@@ -12,7 +12,6 @@ $params = [];
 $types = "";
 $where = [];
 
-// Obtener los valores de los filtros desde la URL
 $categoria_id = intval($_GET['categoria'] ?? 0);
 $material_id = intval($_GET['material'] ?? 0);
 
@@ -52,16 +51,20 @@ $stmt->close();
 $conn->close();
 ?>
 
-<section class="catalogo-con-filtros">
-    <h1 class="text-center my-4">Explora nuestro Catálogo</h1>
-    <div class="row">
-        <div class="col-md-3">
-            <h3>Filtros</h3>
+<div class="container my-5">
+    
+    <h1 class="text-center mb-4" style="color: #8d2146;">Explore our Catalog</h1>
+
+    <div class="row g-5">
+        
+        <div class="col-lg-3">
+            <h3 style="border-bottom: 2px solid #e14b7b; padding-bottom: 5px;">Filters</h3>
+            
             <form action="catalogo.php" method="get">
                 <div class="mb-3">
-                    <label for="categoria" class="form-label">Categoría</label>
+                    <label for="categoria" class="form-label">Category</label>
                     <select class="form-select" id="categoria" name="categoria">
-                        <option value="">Todas</option>
+                        <option value="">All</option>
                         <?php foreach ($categorias as $cat): ?>
                             <option value="<?= $cat['id'] ?>" <?= $categoria_id == $cat['id'] ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($cat['nombre']) ?>
@@ -69,40 +72,50 @@ $conn->close();
                         <?php endforeach; ?>
                     </select>
                 </div>
+                
                 <div class="mb-3">
                     <label for="material" class="form-label">Material</label>
                     <select class="form-select" id="material" name="material">
-                        <option value="">Todos</option>
+                        <option value="">All</option>
                         <?php foreach ($materiales as $mat): ?>
-                            <option value="<?= $mat['id'] ?>" <?= $material_id == $mat['id'] ? 'selected' : '' ?>>
+                            <option value="<?= $mat['id'] ?>" <?= $mat['id'] == $mat['id'] ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($mat['nombre']) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">Aplicar Filtros</button>
+                
+                <button type="submit" class="btn w-100" style="background-color: #e14b7b; color: white;">Apply Filters</button>
             </form>
         </div>
 
-        <div class="col-md-9">
+        <div class="col-lg-9">
             <div class="lista-productos">
                 <?php if (!empty($productos)): ?>
                     <?php foreach ($productos as $prod): ?>
-                        <a href="productos.php?id=<?= $prod['id'] ?>">
+                        <?php
+                            $descripcion_corta = mb_strimwidth(htmlspecialchars($prod["descripcion"]), 0, 50, "...");
+                        ?>
+                        <a href="productos.php?id=<?= $prod['id'] ?>" style="text-decoration: none;">
                             <div class="producto">
-                                <img src="img/<?= htmlspecialchars($prod['imagen']) ?>" alt="<?= htmlspecialchars($prod['nombre']) ?>">
+                                <?php if (!empty($prod["imagen"]) && file_exists("img/" . htmlspecialchars($prod["imagen"]))): ?>
+                                    <img src="img/<?= htmlspecialchars($prod['imagen']) ?>" alt="<?= htmlspecialchars($prod['nombre']) ?>">
+                                <?php else: ?>
+                                    <img src="img/placeholder.jpg" alt="Image not available">
+                                <?php endif; ?>
+                                
                                 <h3><?= htmlspecialchars($prod['nombre']) ?></h3>
-                                <p><?= htmlspecialchars($prod['descripcion']) ?></p>
+                                <p><?= $descripcion_corta ?></p>
                                 <p class="precio">$<?= htmlspecialchars(number_format($prod['precio'], 2)) ?></p>
                             </div>
                         </a>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <p>No se encontraron productos con los filtros seleccionados.</p>
+                    <p class="text-center w-100">No products found matching your selection.</p>
                 <?php endif; ?>
             </div>
         </div>
     </div>
-</section>
+</div>
 
 <?php include 'templates/footer.php'; ?>

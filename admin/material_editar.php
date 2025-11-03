@@ -21,7 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($nombre === "") {
         $error = "El nombre es obligatorio.";
     } else {
-        $stmt = $conn->prepare("UPDATE materiales SET nombre=? WHERE id=?}");
+        // --- CORRECCIÓN AQUÍ --- 
+        // Se eliminó el '}' al final de la consulta SQL
+        $stmt = $conn->prepare("UPDATE materiales SET nombre=? WHERE id=?");
+        // -------------------------
+
         $stmt->bind_param("si", $nombre, $id);
         if($stmt->execute()) {
             header('Location: materiales_list.php');

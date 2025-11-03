@@ -138,11 +138,28 @@ section {
 
 .producto img {
     width: 100%;
-    max-width: 150px;
-    height: 150px;
+    /* (CAMBIO) Imagen más grande */
+    height: 250px; 
     object-fit: cover;
     border-radius: 8px;
     margin-bottom: 15px;
+    /* (CAMBIO) Transición suave */
+    transition: transform 0.3s ease; 
+}
+
+/* (CAMBIO) Efecto de zoom en la imagen */
+.producto:hover img {
+    transform: scale(1.05);
+}
+
+.producto h3 {
+    font-size: 1.25em;
+    margin: 0 0 8px;
+    color: #8d2146;
+    /* (CAMBIO) Evita que títulos largos rompan el diseño */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .producto h3 {
@@ -163,19 +180,6 @@ section {
     color: #e14b7b;
 }
 
-/* Estilos para la página de Catálogo (con filtros) */
-.catalogo-con-filtros .row {
-    display: flex;
-    gap: 30px;
-}
-
-.col-md-3 {
-    flex: 0 0 25%;
-}
-
-.col-md-9 {
-    flex: 0 0 75%;
-}
 
 .catalogo-con-filtros h1 {
     color: #8d2146;
